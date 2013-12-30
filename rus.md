@@ -7,7 +7,8 @@
 
 ![Хаос][4]
 
-Это безумие, верно? В этой короткой статье я постараюсь прояснить это.
+Это безумие, верно? В этой короткой статье я постараюсь прояснить работу с this.
+
 
 ## Как это работает
 
@@ -21,7 +22,7 @@
     
     parent.method(); // <- родительский объект
 
-Заметьте, что этот паттерн очень уязвимый, если вы вызовете метод по ссылке, тогда `this` не будет больше ссылаться на родительский объект `parent`, вместо этого `this` теперь будет ссылаться на глобальный объект `Window`. Это обстоятельство приводит в замешательство большинство разработчиков.
+Заметьте, что этот паттерн очень уязвим, так как если вы вызовете метод по ссылке, тогда `this` не будет больше ссылаться на родительский объект `parent`, вместо этого `this` теперь будет ссылаться на глобальный объект `Window`. Это обстоятельство приводит в замешательство большинство разработчиков.
 
     var parentless = parent.method;
     
@@ -42,46 +43,39 @@
     ThisClownCar();
     // <- Window
 
-## Tampering with this
 
-The `.call`, `.apply`, and `.bind` methods are used to manipulate function
-invocations, helping us to define both the value for `this`, and the `arguments`
+## Ручное управление над this
 
-`Function.prototype.call` takes any number of arguments, the first one is
-assigned to `this`, and the rest are passed as arguments to the function that’
-s being invoked.
+Методы `.call`, `.apply`, и `.bind` используется для управляемого вызова функций, помогая определять оба передаваемых значения: `this` (контекст функции) и `arguments`.
+
+Метод `Function.prototype.call` может принимать любое количество аргументов; первый из них будет использоваться как `this`, а оставшиеся будут переданы вызываемой функции как аргументы.
 
     Array.prototype.slice.call([1, 2, 3], 1, 2)
     // <- [2]
 
-`Function.prototype.apply` behaves very similarly to `.call`, but it takes the
-arguments as a single array with every value, instead of any number of parameter
-values.
+Метод `Function.prototype.apply` очень похож на предыдущий, только аргумент в нём передаются одним массивом, вместо неопределённого количества аргументов у метода `call`.
 
     String.prototype.split.apply('13.12.02', ['.'])
     // <- ['13', '12', '02']
 
-`Function.prototype.bind` creates a special function which can be used to
-invoke the function it is called on. That function will always use the `this`
-argument passed to `.bind`, as well as being able to assign a few arguments,
-creating a[curried version][6] of the original function.
+Метод `Function.prototype.bind` возвращает специальную функцию, которая может быть использована для вызова функции, от которой вызван `bind`. Функция всегда будет использовать переданный ей `this` и в тоже время ей можно передать несколько в качестве всегда используемых аргументов в возвращаемой функции, что очень удобно для [каррирования][6] оригинальной функции.
 
     var arr = [1, 2];
     var add = Array.prototype.push.bind(arr, 3);
     
-    // effectively the same as arr.push(3)
+    // эквивалентно arr.push(3)
     add();
     
-    // effectively the same as arr.push(3, 4)
+    // эквивалентно arr.push(3, 4)
     add(4);
     
     console.log(arr);
     // <- [1, 2, 3, 3, 4]
 
-## Scoping this
 
-In the next case, `this` will stay the same across the scope chain. This is the
-exception to the rule, and often leads to confusion among amateur developers.
+## Область видимости и this
+
+В следующем случае `this` будет неизменным в разных областях видимости. Это исключение в правиле и оно часто приводит к ошибкам среди разработчиков. (!!! мне совсем не нравится этот абзац и пример к нему, они вообще никакой полезной нагрузки не несут)
 
     function scoping () {
       console.log(this);
@@ -95,10 +89,7 @@ exception to the rule, and often leads to confusion among amateur developers.
     // <- Window
     // <- Window
 
-A common work-around is to create a local variable which holds onto the
-reference to `this`, and isn’t shadowed in the child scope. The child scope
-shadows `this`, making it impossible to access a reference to the parent `this`
-directly.
+Распространённый способ обойти создавшуюся проблему это создать локальную переменную, содержащую ссылку на `this` текущей функции (области видимости) и остающуюся доступной во вложенной функции. Вложенная функция имеет свою собтвенную переменную `this`, что означает невозможность использования `this` родительской функции напрямую.
 
     function retaining () {
       var self = this;
@@ -111,10 +102,7 @@ directly.
     retaining()();
     // <- Window
 
-Unless you really want to use both the parent scope’s `this`, as well as the
-current value of `this` for some obscure reason, the method I prefer is to use
-the `.bind` function. This can be used to assign the parent `this` to the child
-scope.
+Если вы всё таки по каким-то неведомым причинам желаете использовать родительский контекст (`this` родительской функции), в качестве контекста для вложенной функции, то я могу посоветовать предпочитаемый мною метод использования функции `.bind`. Эта функция может быть использована, чтобы пробросить родительский контекст во вложенную функцию.
 
     function bound () {
       return function () {
@@ -125,15 +113,11 @@ scope.
     bound()();
     // <- Window
 
-## Other Issues?
+## Вопросы?
 
-Have you ever had any problems with this? How about `this`? Let me know if you
-think I’ve missed any other edge cases or elegant solutions.
+Были ли у вас какие-нибудь проблемы с этим? А как насчёт `this`? Сообщие мне, если вы думаете, что я пропустил какие-то важные ситуации или красивые решения.
 
-If you liked this post, be sure to check out my upcoming book 
-[JavaScript Application Design: A Build First Approach][2] which you can
-already purchase as an[early access edition][3].
-
+Если вам понравился этот пост, то возможно вам стоит вам присмотреться к моей будущей книге «[JavaScript Application Design: A Build First Approach][2]», которую вы уже можете заказать на стадии [раннего издания][3].
 
 [1]: http://flippinawesome.org/authors/nicolas-bevacqua
 
@@ -142,4 +126,4 @@ already purchase as an[early access edition][3].
 [4]: img/chaos.gif
 
 [5]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/Strict_mode "Strict mode explained on MDN"
-[6]: http://en.wikipedia.org/wiki/Currying "Currying on Wikipedia"
+[6]: http://ru.wikipedia.org/wiki/Каррирование "Каррирование on Wikipedia"
